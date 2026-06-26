@@ -4,6 +4,8 @@ pub mod db;
 pub mod models;
 pub mod reminder_engine;
 pub mod timer_engine;
+pub mod tray;
+pub mod window_manager;
 
 use db::Database;
 use std::path::PathBuf;
@@ -37,6 +39,53 @@ pub fn run() {
             timer_engine::start_timer_engine(app.handle().clone(), db.inner().clone());
             reminder_engine::start_reminder_engine(app.handle().clone(), db.inner().clone());
             backup_engine::start_backup_engine(data_dir.inner().clone());
+
+            // Check first launch
+            let is_first_launch = {
+                let conn = db.conn.lock().unwrap();
+                conn.query_row::<String, _, _>(
+                    "SELECT value FROM settings WHERE key='first_launch'",
+                    [],
+                    |r| r.get(0),
+                ).is_err()
+            };
+            if is_first_launch {
+                let conn = db.conn.lock().unwrap();
+                conn.execute(
+                    "INSERT OR REPLACE INTO settings (key,value) VALUES ('first_launch','false')",
+                    rusqlite::params![],
+                ).ok();
+                window_manager::create_management_panel(&app.handle()).ok();
+            }
+
+            // Restore visible windows
+            let visible: Vec<(String, String, Option<String>, Option<String>)> = {
+                let db_conn = db.conn.lock().unwrap();
+                let mut stmt = db_conn.prepare(
+                    "SELECT n.id, n.type, n.title, n.bg_color FROM notes n \
+                     JOIN window_state ws ON n.id = ws.note_id \
+                     WHERE ws.is_visible = 1 AND n.deleted_at IS NULL"
+                ).unwrap();
+                let result = stmt.query_map([], |row| {
+                    Ok((
+                        row.get::<_, String>(0)?,
+                        row.get::<_, String>(1)?,
+                        row.get::<_, Option<String>>(2)?,
+                        row.get::<_, Option<String>>(3)?,
+                    ))
+                }).unwrap().filter_map(|r| r.ok()).collect();
+                result
+            };
+
+            for (id, ntype, title, bg) in visible {
+                let bg_color = bg.unwrap_or_else(|| {
+                    if ntype == "timer" { "#1f1d3d".into() } else { "#f4ecd6".into() }
+                });
+                let note_title = title.unwrap_or_default();
+                window_manager::create_note_window(&app.handle(), &id, &ntype, &bg_color, &note_title).ok();
+            }
+
+            tray::setup_tray(&app.handle()).ok();
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -60,6 +109,12 @@ pub fn run() {
             commands::reminders::set_reminder,
             commands::reminders::get_reminders,
             commands::reminders::delete_reminder,
+            commands::windows::save_window_state,
+            commands::windows::get_window_state,
+            commands::windows::get_all_window_states,
+            commands::settings::set_setting,
+            commands::settings::get_setting,
+            commands::settings::export_all_data,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
