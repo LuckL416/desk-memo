@@ -40,23 +40,8 @@ pub fn run() {
             reminder_engine::start_reminder_engine(app.handle().clone(), db.inner().clone());
             backup_engine::start_backup_engine(data_dir.inner().clone());
 
-            // Check first launch
-            let is_first_launch = {
-                let conn = db.conn.lock().unwrap();
-                conn.query_row::<String, _, _>(
-                    "SELECT value FROM settings WHERE key='first_launch'",
-                    [],
-                    |r| r.get(0),
-                ).is_err()
-            };
-            if is_first_launch {
-                let conn = db.conn.lock().unwrap();
-                conn.execute(
-                    "INSERT OR REPLACE INTO settings (key,value) VALUES ('first_launch','false')",
-                    rusqlite::params![],
-                ).ok();
-                window_manager::create_management_panel(&app.handle()).ok();
-            }
+            // Always show management panel on startup
+            window_manager::create_management_panel(&app.handle()).ok();
 
             // Restore visible windows
             let visible: Vec<(String, String, Option<String>, Option<String>)> = {
@@ -109,6 +94,7 @@ pub fn run() {
             commands::reminders::set_reminder,
             commands::reminders::get_reminders,
             commands::reminders::delete_reminder,
+            commands::windows::set_window_opacity,
             commands::windows::save_window_state,
             commands::windows::get_window_state,
             commands::windows::get_all_window_states,
