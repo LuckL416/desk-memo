@@ -1,8 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicedoc/tauri/refs/heads/dev/crates/tauri-config-schema/schema.json",
   "productName": "桌面便签",
-  "version": "0.0.0",
-  "identifier": "com.desktop-sticky-notes.app",
+  "version": "0.1.0",
+  "identifier": "com.stickynotes.desktop",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420",
@@ -11,17 +11,7 @@
   },
   "app": {
     "withGlobalTauri": true,
-    "windows": [
-      {
-        "title": "桌面便签",
-        "width": 320,
-        "height": 320,
-        "decorations": false,
-        "resizable": true,
-        "visible": false,
-        "skipTaskbar": true
-      }
-    ],
+    "windows": [],
     "security": {
       "csp": null
     }
