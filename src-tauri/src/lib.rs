@@ -1,6 +1,8 @@
+pub mod backup_engine;
 pub mod commands;
 pub mod db;
 pub mod models;
+pub mod reminder_engine;
 pub mod timer_engine;
 
 use db::Database;
@@ -31,7 +33,10 @@ pub fn run() {
         .manage(data_dir)
         .setup(|app| {
             let db = app.state::<Arc<Database>>();
+            let data_dir = app.state::<PathBuf>();
             timer_engine::start_timer_engine(app.handle().clone(), db.inner().clone());
+            reminder_engine::start_reminder_engine(app.handle().clone(), db.inner().clone());
+            backup_engine::start_backup_engine(data_dir.inner().clone());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -52,6 +57,9 @@ pub fn run() {
             commands::timers::pause_timer,
             commands::timers::reset_timer,
             commands::timers::update_timer_settings,
+            commands::reminders::set_reminder,
+            commands::reminders::get_reminders,
+            commands::reminders::delete_reminder,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
