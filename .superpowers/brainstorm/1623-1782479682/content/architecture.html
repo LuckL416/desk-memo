@@ -1,0 +1,110 @@
+<h2>第一节：架构总览</h2>
+<p class="subtitle">方案 A — 数据库即真相源 · Tauri 2.x + Vue 3 + SQLite</p>
+
+<div class="section">
+  <h3>整体分层</h3>
+</div>
+
+<div class="mockup">
+  <div class="mockup-header">系统分层架构</div>
+  <div class="mockup-body" style="background:#ffffff;color:#000000;padding:24px;font-family:Inter,sans-serif;font-size:14px;line-height:1.6;">
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+
+      <!-- Layer 1: Windows -->
+      <div style="border:2px solid #000;border-radius:12px;padding:16px;background:#f7f7f5;">
+        <div style="font-weight:700;font-size:16px;margin-bottom:8px;">🪟 窗口层 — 每个便签一个独立 WebView</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div style="background:#dceeb1;border-radius:8px;padding:8px 14px;font-size:12px;">便签窗口 #1<br/>Vue 3 + TipTap</div>
+          <div style="background:#c5b0f4;border-radius:8px;padding:8px 14px;font-size:12px;">便签窗口 #2<br/>Vue 3 + TipTap</div>
+          <div style="background:#f4ecd6;border-radius:8px;padding:8px 14px;font-size:12px;">便签窗口 #N<br/>Vue 3 + TipTap</div>
+          <div style="background:#fff;border:1px solid #000;border-radius:8px;padding:8px 14px;font-size:12px;">管理面板<br/>Vue 3 列表</div>
+          <div style="background:#fff;border:1px solid #e6e6e6;border-radius:8px;padding:8px 14px;font-size:12px;color:#999;">设置窗口<br/>(按需弹出)</div>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:#888;">每个窗口 = 独立 Tauri WebviewWindow · 无任务栏条目 · 仅托盘可见</div>
+      </div>
+
+      <!-- Arrow -->
+      <div style="text-align:center;font-size:20px;">↓ invoke / listen ↓</div>
+
+      <!-- Layer 2: Rust -->
+      <div style="border:2px solid #000;border-radius:12px;padding:16px;background:#f7f7f5;">
+        <div style="font-weight:700;font-size:16px;margin-bottom:8px;">⚙️ Rust 后端 — 所有业务逻辑在此</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div style="background:#fff;border:1px solid #000;border-radius:8px;padding:6px 12px;font-size:12px;">窗口管理器<br/>创建/销毁/恢复/置顶/置底</div>
+          <div style="background:#fff;border:1px solid #000;border-radius:8px;padding:6px 12px;font-size:12px;">计时引擎<br/>独立线程·倒计时·重置</div>
+          <div style="background:#fff;border:1px solid #000;border-radius:8px;padding:6px 12px;font-size:12px;">提醒引擎<br/>独立线程·定时·通知</div>
+          <div style="background:#fff;border:1px solid #000;border-radius:8px;padding:6px 12px;font-size:12px;">备份引擎<br/>每日全量·7份保留</div>
+          <div style="background:#fff;border:1px solid #000;border-radius:8px;padding:6px 12px;font-size:12px;">自动保存<br/>debounced 写库</div>
+          <div style="background:#fff;border:1px solid #000;border-radius:8px;padding:6px 12px;font-size:12px;">自启动·托盘·快捷键</div>
+        </div>
+      </div>
+
+      <!-- Arrow -->
+      <div style="text-align:center;font-size:20px;">↓ SQL ↓</div>
+
+      <!-- Layer 3: SQLite -->
+      <div style="border:2px solid #000;border-radius:12px;padding:16px;background:#f7f7f5;">
+        <div style="font-weight:700;font-size:16px;margin-bottom:8px;">💾 数据层 — SQLite 单文件</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div style="background:#fff;border:1px solid #e6e6e6;border-radius:8px;padding:6px 12px;font-size:12px;">groups 分组表</div>
+          <div style="background:#fff;border:1px solid #e6e6e6;border-radius:8px;padding:6px 12px;font-size:12px;">notes 便签表</div>
+          <div style="background:#fff;border:1px solid #e6e6e6;border-radius:8px;padding:6px 12px;font-size:12px;">timer_state 计时状态</div>
+          <div style="background:#fff;border:1px solid #e6e6e6;border-radius:8px;padding:6px 12px;font-size:12px;">reminders 提醒表</div>
+          <div style="background:#fff;border:1px solid #e6e6e6;border-radius:8px;padding:6px 12px;font-size:12px;">window_state 窗口状态</div>
+          <div style="background:#fff;border:1px solid #e6e6e6;border-radius:8px;padding:6px 12px;font-size:12px;">trash 回收站</div>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:#888;">默认路径: %APPDATA%/desktop-sticky-notes/data.db · 备份: %APPDATA%/desktop-sticky-notes/backups/</div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<div class="section" style="margin-top:24px;">
+  <h3>关键设计决策</h3>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;">
+  <div style="border:1px solid #e6e6e6;border-radius:8px;padding:14px;">
+    <strong>🔗 单文件数据库</strong>
+    <p style="color:#555;margin-top:4px;">所有表存在一个 SQLite 文件。备份=复制文件。导出=SELECT 转 JSON。简单可靠。</p>
+  </div>
+  <div style="border:1px solid #e6e6e6;border-radius:8px;padding:14px;">
+    <strong>⏱ Rust 侧独立计时线程</strong>
+    <p style="color:#555;margin-top:4px;">计时便签的倒计时在 Rust 后台线程运行，不依赖 Vue 窗口存活。窗口关闭 = 仅关闭视图，计时继续。</p>
+  </div>
+  <div style="border:1px solid #e6e6e6;border-radius:8px;padding:14px;">
+    <strong>📡 Rust → Vue 单向推送</strong>
+    <p style="color:#555;margin-top:4px;">Rust 通过 Tauri 事件推送计时变化、提醒触发、便签变更给所有窗口。Vue 只负责消费和渲染。</p>
+  </div>
+  <div style="border:1px solid #e6e6e6;border-radius:8px;padding:14px;">
+    <strong>💬 Vue → Rust 通过 invoke</strong>
+    <p style="color:#555;margin-top:4px;">用户编辑、新建、删除、设置等操作通过 Tauri invoke 调用 Rust 命令，Rust 写库后广播事件。</p>
+  </div>
+  <div style="border:1px solid #e6e6e6;border-radius:8px;padding:14px;">
+    <strong>🪟 窗口状态记忆</strong>
+    <p style="color:#555;margin-top:4px;">每条便签的位置/大小/透明度/置顶模式存 SQLite。启动时 Rust 读取并重建所有窗口。</p>
+  </div>
+  <div style="border:1px solid #e6e6e6;border-radius:8px;padding:14px;">
+    <strong>🔔 定时提醒 = Rust 定时器 + 系统通知</strong>
+    <p style="color:#555;margin-top:4px;">提醒时间存库，Rust 线程每秒检查，命中时调用 tauri-plugin-notification 弹出系统通知。</p>
+  </div>
+</div>
+
+<div class="section" style="margin-top:24px;">
+  <h3>进程模型</h3>
+  <p class="subtitle">一个 Tauri 进程，多个 WebView 窗口，一个 SQLite 连接（带 WAL 模式并发读）</p>
+</div>
+
+<div style="background:#f7f7f5;border-radius:8px;padding:16px;font-size:13px;font-family:'JetBrains Mono',monospace;">
+桌面便签.exe (单一进程)<br/>
+├── main.rs → 启动托盘 + 恢复窗口 + 初始化引擎<br/>
+├── 后台线程: 计时线程 (1秒精度，检查所有活跃计时)<br/>
+├── 后台线程: 提醒线程 (1分钟精度，检查所有提醒)<br/>
+├── 后台线程: 备份线程 (每日定时，保留7份)<br/>
+├── 后台线程: 自动保存线程 (debounced 批量写库)<br/>
+├── WebView #1..N: 便签窗口 (每个独立 webview)<br/>
+└── WebView: 管理面板 (按需创建)<br/>
+</div>

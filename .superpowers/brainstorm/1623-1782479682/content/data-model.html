@@ -1,0 +1,137 @@
+<h2>第二节：数据模型</h2>
+<p class="subtitle">SQLite 单文件 · 6 张核心表 · WAL 模式</p>
+
+<div class="section">
+  <h3>表结构总览</h3>
+</div>
+
+<div style="font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.5;">
+
+  <!-- groups -->
+  <div style="border:1px solid #000;border-radius:12px;padding:16px;margin-bottom:12px;background:#f7f7f5;">
+    <div style="font-weight:700;font-size:15px;margin-bottom:4px;">📁 groups — 分组表</div>
+    <div style="color:#555;">管理便签分组（工作/学习/草缸等）</div>
+    <div style="margin-top:8px;">
+      <div><b>id</b> TEXT PK — UUID</div>
+      <div><b>name</b> TEXT NOT NULL — 分组名称</div>
+      <div><b>sort_order</b> INTEGER DEFAULT 0 — 排序权重</div>
+      <div><b>created_at</b> TEXT — ISO 8601</div>
+      <div><b>updated_at</b> TEXT — ISO 8601</div>
+    </div>
+  </div>
+
+  <!-- notes -->
+  <div style="border:1px solid #000;border-radius:12px;padding:16px;margin-bottom:12px;background:#f7f7f5;">
+    <div style="font-weight:700;font-size:15px;margin-bottom:4px;">📝 notes — 便签主表</div>
+    <div style="color:#555;">所有类型便签（普通/待办/计时）统一存储于此</div>
+    <div style="margin-top:8px;">
+      <div><b>id</b> TEXT PK — UUID</div>
+      <div><b>group_id</b> TEXT FK → groups.id</div>
+      <div><b>type</b> TEXT NOT NULL — 'text' | 'todo' | 'timer'</div>
+      <div><b>title</b> TEXT — 便签标题（可为空，普通便签可能仅正文）</div>
+      <div><b>content</b> TEXT — TipTap JSON (text/todo) 或 null (timer)</div>
+      <div><b>bg_color</b> TEXT — 背景色 hex，null=白色</div>
+      <div><b>default_text_color</b> TEXT — 默认文字色，null=黑色</div>
+      <div><b>default_font_size</b> INTEGER — 默认字号 px</div>
+      <div><b>created_at</b> TEXT — ISO 8601</div>
+      <div><b>updated_at</b> TEXT — ISO 8601</div>
+      <div><b>deleted_at</b> TEXT — 软删除标记，非空=在回收站</div>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:#888;">
+      💡 content 使用 TipTap 的 JSON 格式存储，支持富文本 + 待办复选框。计时便签 content=null，计时数据在 timer_state 表。
+    </div>
+  </div>
+
+  <!-- timer_state -->
+  <div style="border:1px solid #000;border-radius:12px;padding:16px;margin-bottom:12px;background:#f7f7f5;">
+    <div style="font-weight:700;font-size:15px;margin-bottom:4px;">⏱ timer_state — 计时便签专属状态</div>
+    <div style="color:#555;">计时便签的运行时状态，note_id 一对一关联</div>
+    <div style="margin-top:8px;">
+      <div><b>note_id</b> TEXT PK FK → notes.id</div>
+      <div><b>daily_duration_minutes</b> INTEGER DEFAULT 480 — 每日总时长（分钟），默认8h</div>
+      <div><b>remaining_seconds</b> INTEGER — 当前剩余秒数</div>
+      <div><b>is_running</b> INTEGER DEFAULT 0 — 是否正在计时</div>
+      <div><b>last_resume_at</b> TEXT — 上次开始/继续时间 ISO 8601</div>
+      <div><b>tank_start_date</b> TEXT — 开缸日期，null=未设置</div>
+      <div><b>auto_start_time</b> TEXT — 自动开始时间 'HH:MM'，null=不启用</div>
+      <div><b>warn_before_minutes</b> INTEGER — 提前提醒分钟数 (10/30)，null=不提醒</div>
+    </div>
+  </div>
+
+  <!-- reminders -->
+  <div style="border:1px solid #000;border-radius:12px;padding:16px;margin-bottom:12px;background:#f7f7f5;">
+    <div style="font-weight:700;font-size:15px;margin-bottom:4px;">🔔 reminders — 提醒表</div>
+    <div style="color:#555;">普通便签/待办便签的定时提醒</div>
+    <div style="margin-top:8px;">
+      <div><b>id</b> TEXT PK — UUID</div>
+      <div><b>note_id</b> TEXT FK → notes.id</div>
+      <div><b>remind_at</b> TEXT — 提醒时间 ISO 8601</div>
+      <div><b>repeat_type</b> TEXT — 'once' | 'daily' | 'weekly'</div>
+      <div><b>repeat_days</b> TEXT — weekly时 '1,3,5' 表示周一三五，其他类型null</div>
+      <div><b>is_active</b> INTEGER DEFAULT 1</div>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:#888;">
+      💡 weekly 重复用数字表示星期: 1=周一 … 7=周日。提醒触发后 once型自动 is_active=0；重复型自动计算下次时间。
+    </div>
+  </div>
+
+  <!-- window_state -->
+  <div style="border:1px solid #000;border-radius:12px;padding:16px;margin-bottom:12px;background:#f7f7f5;">
+    <div style="font-weight:700;font-size:15px;margin-bottom:4px;">🪟 window_state — 窗口状态记忆</div>
+    <div style="color:#555;">每条便签 + 管理面板的窗口几何信息</div>
+    <div style="margin-top:8px;">
+      <div><b>note_id</b> TEXT PK FK → notes.id (或 'management-panel' 特殊值)</div>
+      <div><b>x</b> INTEGER — 窗口左上角 X</div>
+      <div><b>y</b> INTEGER — 窗口左上角 Y</div>
+      <div><b>width</b> INTEGER — 窗口宽度</div>
+      <div><b>height</b> INTEGER — 窗口高度</div>
+      <div><b>opacity</b> REAL DEFAULT 1.0 — 透明度 0.0–1.0</div>
+      <div><b>pinned</b> INTEGER DEFAULT 0 — 锁定位置/大小</div>
+      <div><b>mode</b> TEXT DEFAULT 'desktop' — 'desktop' 置底 | 'top' 置顶</div>
+      <div><b>is_visible</b> INTEGER DEFAULT 1 — 窗口当前是否可见</div>
+    </div>
+  </div>
+
+  <!-- settings -->
+  <div style="border:1px solid #000;border-radius:12px;padding:16px;margin-bottom:12px;background:#f7f7f5;">
+    <div style="font-weight:700;font-size:15px;margin-bottom:4px;">⚙️ settings — 应用设置 (单行 K/V)</div>
+    <div style="color:#555;">全局配置，仅一行数据</div>
+    <div style="margin-top:8px;">
+      <div><b>key</b> TEXT PK</div>
+      <div><b>value</b> TEXT</div>
+    </div>
+    <div style="margin-top:8px;font-size:12px;color:#555;">
+      典型 key: data_path (自定义存储路径), backup_path (备份路径), backup_keep_days (保留天数), trash_auto_clean_days (回收站自动清理天数), autostart (开机自启), language (语言) …
+    </div>
+  </div>
+
+</div>
+
+<div class="section" style="margin-top:24px;">
+  <h3>存储路径 — 支持自定义</h3>
+  <p class="subtitle">默认路径 + 用户可改，迁移时自动处理</p>
+</div>
+
+<div style="background:#f7f7f5;border-radius:8px;padding:16px;font-size:13px;">
+  <table style="width:100%;border-collapse:collapse;">
+    <tr><td style="padding:6px 0;font-weight:600;width:140px;">默认路径</td><td>%APPDATA%/StickyNotes/</td></tr>
+    <tr><td style="padding:6px 0;font-weight:600;">数据库文件</td><td>{路径}/data.db (SQLite WAL 模式，含 -wal -shm 辅助文件)</td></tr>
+    <tr><td style="padding:6px 0;font-weight:600;">备份目录</td><td>{路径}/backups/ (可独立设置)</td></tr>
+    <tr><td style="padding:6px 0;font-weight:600;">更改路径时</td><td>停止所有引擎 → 复制 data.db 到新路径 → 更新设置 → 重启引擎。备份也同步迁移。</td></tr>
+  </table>
+</div>
+
+<div class="section" style="margin-top:24px;">
+  <h3>迁移与导出</h3>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;">
+  <div style="border:1px solid #e6e6e6;border-radius:8px;padding:14px;">
+    <strong>📤 手动导出 JSON</strong>
+    <p style="color:#555;margin-top:4px;">Rust 读取所有表 → 序列化单个 JSON 文件。包含便签、分组、计时状态、提醒。用户可选择导出路径。</p>
+  </div>
+  <div style="border:1px solid #e6e6e6;border-radius:8px;padding:14px;">
+    <strong>📥 JSON 导入（合并或覆盖）</strong>
+    <p style="color:#555;margin-top:4px;">读取 JSON → 验证结构 → 用户选择"覆盖"或"合并"模式 → 写入 SQLite。</p>
+  </div>
+</div>
