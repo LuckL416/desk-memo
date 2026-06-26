@@ -1,3 +1,4 @@
+pub mod db;
 pub mod models;
 
 use tauri::Manager;
