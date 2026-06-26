@@ -3,6 +3,7 @@ use crate::db::Database;
 use crate::models::Note;
 use chrono::Utc;
 use uuid::Uuid;
+use std::sync::Arc;
 
 // Internal helper (no State needed, used by tray menu)
 pub fn create_note_inner(db: &Database, group_id: Option<String>, note_type: String, title: Option<String>) -> Result<Note, String> {
@@ -26,14 +27,14 @@ pub fn create_note_inner(db: &Database, group_id: Option<String>, note_type: Str
 
 #[tauri::command]
 pub fn create_note(group_id: Option<String>, note_type: String, title: Option<String>,
-    db: State<Database>) -> Result<Note, String> {
+    db: State<Arc<Database>>) -> Result<Note, String> {
     create_note_inner(&db, group_id, note_type, title)
 }
 
 #[tauri::command]
 pub fn update_note(id: String, title: Option<String>, content: Option<String>,
     bg_color: Option<String>, default_text_color: Option<String>,
-    default_font_size: Option<i32>, db: State<Database>) -> Result<(), String> {
+    default_font_size: Option<i32>, db: State<Arc<Database>>) -> Result<(), String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
     let now = Utc::now().to_rfc3339();
     conn.execute(
@@ -44,7 +45,7 @@ pub fn update_note(id: String, title: Option<String>, content: Option<String>,
 }
 
 #[tauri::command]
-pub fn get_note(id: String, db: State<Database>) -> Result<Note, String> {
+pub fn get_note(id: String, db: State<Arc<Database>>) -> Result<Note, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
     conn.query_row("SELECT id, group_id, type, title, content, bg_color, default_text_color, default_font_size, created_at, updated_at, deleted_at FROM notes WHERE id=?1",
         rusqlite::params![id], |row| {
@@ -59,7 +60,7 @@ pub fn get_note(id: String, db: State<Database>) -> Result<Note, String> {
 
 #[tauri::command]
 pub fn list_notes(group_id: Option<String>, note_type: Option<String>,
-    include_deleted: bool, db: State<Database>) -> Result<Vec<Note>, String> {
+    include_deleted: bool, db: State<Arc<Database>>) -> Result<Vec<Note>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
     let mut sql = String::from(
         "SELECT id, group_id, type, title, content, bg_color, default_text_color, default_font_size, created_at, updated_at, deleted_at FROM notes WHERE 1=1"
@@ -90,7 +91,7 @@ pub fn list_notes(group_id: Option<String>, note_type: Option<String>,
 }
 
 #[tauri::command]
-pub fn delete_note(id: String, db: State<Database>) -> Result<(), String> {
+pub fn delete_note(id: String, db: State<Arc<Database>>) -> Result<(), String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
     let now = Utc::now().to_rfc3339();
     conn.execute("UPDATE notes SET deleted_at = ?1, updated_at = ?2 WHERE id = ?3",
@@ -99,7 +100,7 @@ pub fn delete_note(id: String, db: State<Database>) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn restore_note(id: String, db: State<Database>) -> Result<(), String> {
+pub fn restore_note(id: String, db: State<Arc<Database>>) -> Result<(), String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
     conn.execute("UPDATE notes SET deleted_at = NULL WHERE id = ?1",
         rusqlite::params![id]).map_err(|e| e.to_string())?;
@@ -107,7 +108,7 @@ pub fn restore_note(id: String, db: State<Database>) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn permanently_delete_note(id: String, db: State<Database>) -> Result<(), String> {
+pub fn permanently_delete_note(id: String, db: State<Arc<Database>>) -> Result<(), String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
     conn.execute("DELETE FROM timer_state WHERE note_id = ?1", rusqlite::params![id]).ok();
     conn.execute("DELETE FROM reminders WHERE note_id = ?1", rusqlite::params![id]).ok();
@@ -117,7 +118,7 @@ pub fn permanently_delete_note(id: String, db: State<Database>) -> Result<(), St
 }
 
 #[tauri::command]
-pub fn search_notes(query: String, db: State<Database>) -> Result<Vec<Note>, String> {
+pub fn search_notes(query: String, db: State<Arc<Database>>) -> Result<Vec<Note>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
     let pattern = format!("%{}%", query);
     let mut stmt = conn.prepare(

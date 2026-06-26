@@ -3,9 +3,10 @@ use crate::db::Database;
 use crate::models::Group;
 use chrono::Utc;
 use uuid::Uuid;
+use std::sync::Arc;
 
 #[tauri::command]
-pub fn create_group(name: String, db: State<Database>) -> Result<Group, String> {
+pub fn create_group(name: String, db: State<Arc<Database>>) -> Result<Group, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
     let id = Uuid::new_v4().to_string();
     let now = Utc::now().to_rfc3339();
@@ -17,7 +18,7 @@ pub fn create_group(name: String, db: State<Database>) -> Result<Group, String> 
 }
 
 #[tauri::command]
-pub fn list_groups(db: State<Database>) -> Result<Vec<Group>, String> {
+pub fn list_groups(db: State<Arc<Database>>) -> Result<Vec<Group>, String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
     let mut stmt = conn.prepare(
         "SELECT id, name, sort_order, created_at, updated_at FROM groups ORDER BY sort_order"
@@ -34,7 +35,7 @@ pub fn list_groups(db: State<Database>) -> Result<Vec<Group>, String> {
 }
 
 #[tauri::command]
-pub fn rename_group(id: String, name: String, db: State<Database>) -> Result<(), String> {
+pub fn rename_group(id: String, name: String, db: State<Arc<Database>>) -> Result<(), String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
     let now = Utc::now().to_rfc3339();
     conn.execute("UPDATE groups SET name = ?1, updated_at = ?2 WHERE id = ?3",
@@ -43,7 +44,7 @@ pub fn rename_group(id: String, name: String, db: State<Database>) -> Result<(),
 }
 
 #[tauri::command]
-pub fn delete_group(id: String, db: State<Database>) -> Result<(), String> {
+pub fn delete_group(id: String, db: State<Arc<Database>>) -> Result<(), String> {
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
     conn.execute("UPDATE notes SET group_id = NULL WHERE group_id = ?1",
         rusqlite::params![id]).map_err(|e| e.to_string())?;
