@@ -1,8 +1,23 @@
 use tauri::State;
 use std::sync::Arc;
 use std::fs;
+use std::path::PathBuf;
 use crate::db::Database;
 use crate::models::{Group, Note, Reminder, Setting};
+
+#[tauri::command]
+pub fn pick_folder() -> Result<Option<String>, String> {
+    let path = rfd::FileDialog::new().pick_folder();
+    Ok(path.map(|p| p.to_string_lossy().to_string()))
+}
+
+#[tauri::command]
+pub fn pick_save_file(default_name: String) -> Result<Option<String>, String> {
+    let path = rfd::FileDialog::new()
+        .set_file_name(&default_name)
+        .save_file();
+    Ok(path.map(|p| p.to_string_lossy().to_string()))
+}
 
 #[tauri::command]
 pub fn set_setting(key: String, value: String, db: State<Arc<Database>>) -> Result<(), String> {
@@ -60,4 +75,14 @@ pub fn export_all_data(path: String, db: State<Arc<Database>>) -> Result<(), Str
     let json = serde_json::to_string_pretty(&export).map_err(|e| e.to_string())?;
     fs::write(&path, json).map_err(|e| e.to_string())?;
     Ok(())
+}
+
+#[tauri::command]
+pub fn read_log(data_dir: State<PathBuf>) -> Result<String, String> {
+    let log_path = data_dir.inner().join("app.log");
+    if log_path.exists() {
+        fs::read_to_string(&log_path).map_err(|e| e.to_string())
+    } else {
+        Ok("(暂无日志)".into())
+    }
 }

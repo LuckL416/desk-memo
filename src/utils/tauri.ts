@@ -37,6 +37,7 @@ export const deleteReminder = (id: string) => invoke<void>('delete_reminder', { 
 
 // ── Windows ──
 export const saveWindowState = (state: WindowState) => invoke<void>('save_window_state', { state })
+export const setWindowOpacity = (noteId: string, opacity: number) => invoke<void>('set_window_opacity', { noteId, opacity })
 export const getWindowState = (noteId: string) => invoke<WindowState | null>('get_window_state', { noteId })
 export const getAllWindowStates = () => invoke<WindowState[]>('get_all_window_states')
 
@@ -44,6 +45,7 @@ export const getAllWindowStates = () => invoke<WindowState[]>('get_all_window_st
 export const setSetting = (key: string, value: string) => invoke<void>('set_setting', { key, value })
 export const getSetting = (key: string) => invoke<string | null>('get_setting', { key })
 export const exportAllData = (path: string) => invoke<void>('export_all_data', { path })
+export const readLog = () => invoke<string>('read_log')
 
 // ── Event Listeners ──
 export const onTimerTick = (cb: (data: { note_id: string; remaining_seconds: number; is_running: boolean }) => void) => {

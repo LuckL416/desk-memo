@@ -6,7 +6,7 @@ import { TextStyle } from '@tiptap/extension-text-style'
 import { Color } from '@tiptap/extension-color'
 import Placeholder from '@tiptap/extension-placeholder'
 import type { Note } from '../types'
-import { PASTEL_COLORS } from '../types'
+import { MEMO_COLORS } from '../types'
 
 const props = defineProps<{ note: Note }>()
 const emit = defineEmits<{ update: [data: Partial<Note>] }>()
@@ -91,7 +91,7 @@ onBeforeUnmount(() => { editor.value?.destroy() })
       <div class="dropdown-wrap">
         <button @click="showBgPicker = !showBgPicker" title="背景色">🎨 背景</button>
         <div v-if="showBgPicker" class="color-dropdown">
-          <div v-for="c in PASTEL_COLORS" :key="c.hex"
+          <div v-for="c in MEMO_COLORS" :key="c.hex"
             class="color-swatch" :style="{ background: c.hex, border: currentBg === c.hex ? '2px solid #000' : '1px solid #ccc' }"
             :title="c.label" @click="updateBgColor(c.hex)"></div>
         </div>

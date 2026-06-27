@@ -1,7 +1,35 @@
 use tauri::State;
+use tauri::AppHandle;
+use tauri::Manager;
 use std::sync::Arc;
 use crate::db::Database;
 use crate::models::WindowState;
+
+#[tauri::command]
+pub fn set_window_opacity(app: AppHandle, note_id: String, opacity: f64) -> Result<(), String> {
+    // note_id is used as full window label (e.g. "note-xxx" or "calendar-widget")
+    let label = if note_id.starts_with("note-") || note_id == "calendar-widget" { note_id } else { format!("note-{}", note_id) };
+    if let Some(window) = app.get_webview_window(&label) {
+        #[cfg(target_os = "windows")]
+        {
+            use windows::Win32::UI::WindowsAndMessaging::{
+                SetWindowLongPtrW, SetLayeredWindowAttributes, GWL_EXSTYLE, WS_EX_LAYERED, LWA_ALPHA,
+            };
+            use windows::Win32::Foundation::{HWND, COLORREF};
+            let hwnd = window.hwnd().map_err(|e| e.to_string())?;
+            let hwnd = HWND(hwnd.0);
+            unsafe {
+                SetWindowLongPtrW(hwnd, GWL_EXSTYLE, WS_EX_LAYERED.0 as isize);
+                SetLayeredWindowAttributes(hwnd, COLORREF::default(), (opacity * 255.0) as u8, LWA_ALPHA);
+            }
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            let _ = window;
+        }
+    }
+    Ok(())
+}
 
 #[tauri::command]
 pub fn save_window_state(state: WindowState, db: State<Arc<Database>>) -> Result<(), String> {

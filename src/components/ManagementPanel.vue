@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { getCurrentWindow } from '@tauri-apps/api/window'
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import GroupSidebar from './GroupSidebar.vue'
 import NoteList from './NoteList.vue'
 import CalendarView from './CalendarView.vue'
@@ -8,11 +10,13 @@ import * as api from '../utils/tauri'
 import type { Group, Note } from '../types'
 
 const selectedGroup = ref<Group | null>(null)
+const showTrash = ref(false)
 const viewMode = ref<'list' | 'calendar'>('list')
 const searchQuery = ref('')
 const searchResults = ref<Note[]>([])
 const isSearching = ref(false)
 const showNewNoteInput = ref(false)
+const listRefreshKey = ref(0)
 
 async function onSearch() {
   if (!searchQuery.value.trim()) { isSearching.value = false; return }
@@ -20,18 +24,46 @@ async function onSearch() {
   searchResults.value = await api.searchNotes(searchQuery.value)
 }
 
+function onSelectGroup(group: Group | null) {
+  selectedGroup.value = group
+  showTrash.value = false
+}
+
+function onSelectTrash() {
+  selectedGroup.value = null
+  showTrash.value = true
+}
+
 async function onNewNoteConfirm(title: string) {
   showNewNoteInput.value = false
-  await api.createNote(selectedGroup.value?.id ?? null, 'text', title.trim() || null)
-  location.reload()
+  const note = await api.createNote(selectedGroup.value?.id ?? null, 'text', title.trim() || null)
+  // 前端创建窗口（避免 Rust 命令线程池 build 死锁）
+  new WebviewWindow(`note-${note.id}`, {
+    url: 'index.html',
+    title: '桌面便签',
+    width: 320, height: 240,
+    minWidth: 200, minHeight: 120,
+    decorations: false, skipTaskbar: true, visible: true,
+  })
+  listRefreshKey.value++
 }
 
 function onNewNoteCancel() {
   showNewNoteInput.value = false
 }
 
+async function openCalendar() {
+  const label = 'calendar-widget'
+  const existing = await WebviewWindow.getByLabel(label)
+  if (existing) { await existing.show(); await existing.setFocus(); return }
+  new WebviewWindow(label, {
+    url: 'index.html', title: '桌面日历',
+    width: 560, height: 420, minWidth: 400, minHeight: 300,
+    decorations: false, skipTaskbar: true, visible: true,
+  })
+}
+
 async function closePanel() {
-  const { getCurrentWindow } = await import('@tauri-apps/api/window')
   await getCurrentWindow().hide()
 }
 </script>
@@ -47,12 +79,13 @@ async function closePanel() {
       <div class="search-wrap" data-tauri-drag-region="false">
         <input v-model="searchQuery" placeholder="🔍 搜索便签..." @input="onSearch" class="search-input" data-tauri-drag-region="false" />
       </div>
-      <button class="new-btn" data-tauri-drag-region="false" @click="showNewNoteInput = true">+ 新建</button>
+      <button v-if="!showTrash" class="cal-btn" data-tauri-drag-region="false" @click="openCalendar">📅 桌面日历</button>
+      <button v-if="!showTrash" class="new-btn" data-tauri-drag-region="false" @click="showNewNoteInput = true">+ 新建</button>
       <button class="close-panel-btn" data-tauri-drag-region="false" @click="closePanel" title="隐藏面板">✕</button>
     </div>
     <div class="body">
-      <GroupSidebar @select="selectedGroup = $event" />
-      <NoteList v-if="viewMode === 'list' && !isSearching" :group="selectedGroup" />
+      <GroupSidebar @select="onSelectGroup" @select-trash="onSelectTrash" />
+      <NoteList v-if="viewMode === 'list' && !isSearching" :group="selectedGroup" :trash="showTrash" :key="listRefreshKey" />
       <div v-else-if="isSearching" class="search-results">
         <div v-for="n in searchResults" :key="n.id" class="search-item">{{ n.title || '无标题' }}</div>
         <div v-if="searchResults.length === 0" style="color:#999;padding:20px;text-align:center;">无匹配结果</div>
@@ -82,6 +115,8 @@ async function closePanel() {
 .view-pill.active { background: var(--color-primary); color: var(--color-on-primary); }
 .search-wrap { flex: 1; display: flex; justify-content: center; -webkit-app-region: no-drag; }
 .search-input { border: 1px solid var(--color-hairline); border-radius: var(--rounded-md); padding: 8px 14px; font-size: 14px; width: 360px; background: var(--color-surface-soft); text-align: center; outline: none; }
+.cal-btn { background: var(--color-surface-soft); color: var(--color-ink); border: 1px solid var(--color-hairline); padding: 8px 14px; border-radius: var(--rounded-pill); font-size: 13px; cursor: pointer; white-space: nowrap; -webkit-app-region: no-drag; }
+.cal-btn:hover { background: #e6e6e6; }
 .new-btn { background: var(--color-primary); color: var(--color-on-primary); border: none; padding: 8px 18px; border-radius: var(--rounded-pill); font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; -webkit-app-region: no-drag; }
 .close-panel-btn { background: rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.1); cursor: pointer; font-size: 14px; padding: 4px 10px; border-radius: var(--rounded-pill); color: var(--color-ink); -webkit-app-region: no-drag; }
 .close-panel-btn:hover { background: #ff3d8b; color: #fff; border-color: #ff3d8b; }

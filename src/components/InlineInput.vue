@@ -22,8 +22,8 @@ function onKeydown(e: KeyboardEvent) {
     <div class="inline-input-box">
       <input ref="inputRef" v-model="value" :placeholder="placeholder || '输入...'" @keydown="onKeydown" />
       <div class="inline-input-actions">
-        <button class="btn-cancel" @click="emit('cancel')">取消</button>
-        <button class="btn-confirm" @click="emit('confirm', value)">确定</button>
+        <button class="btn-cancel" @click.stop="emit('cancel')">取消</button>
+        <button class="btn-confirm" @click.stop="emit('confirm', value)">确定</button>
       </div>
     </div>
   </div>

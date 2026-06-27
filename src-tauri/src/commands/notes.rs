@@ -1,4 +1,5 @@
 use tauri::State;
+use tauri::AppHandle;
 use crate::db::Database;
 use crate::models::Note;
 use chrono::Utc;
@@ -19,16 +20,18 @@ pub fn create_note_inner(db: &Database, group_id: Option<String>, note_type: Str
             rusqlite::params![id]).map_err(|e| e.to_string())?;
     }
     Ok(Note {
-        id, group_id, r#type: note_type, title, content: None,
+        id: id.clone(), group_id, r#type: note_type, title: title.clone(), content: None,
         bg_color: None, default_text_color: None, default_font_size: None,
         created_at: now.clone(), updated_at: now, deleted_at: None,
     })
 }
 
 #[tauri::command]
-pub fn create_note(group_id: Option<String>, note_type: String, title: Option<String>,
+pub fn create_note(app: AppHandle, group_id: Option<String>, note_type: String, title: Option<String>,
     db: State<Arc<Database>>) -> Result<Note, String> {
-    create_note_inner(&db, group_id, note_type, title)
+    let note = create_note_inner(&db, group_id, note_type, title)?;
+    // 前端创建窗口（避免线程池 build() 死锁）
+    Ok(note)
 }
 
 #[tauri::command]
@@ -38,7 +41,7 @@ pub fn update_note(id: String, title: Option<String>, content: Option<String>,
     let conn = db.conn.lock().map_err(|e| e.to_string())?;
     let now = Utc::now().to_rfc3339();
     conn.execute(
-        "UPDATE notes SET title=?1, content=?2, bg_color=?3, default_text_color=?4, default_font_size=?5, updated_at=?6 WHERE id=?7",
+        "UPDATE notes SET title=COALESCE(?1,title), content=COALESCE(?2,content), bg_color=COALESCE(?3,bg_color), default_text_color=COALESCE(?4,default_text_color), default_font_size=COALESCE(?5,default_font_size), updated_at=?6 WHERE id=?7",
         rusqlite::params![title, content, bg_color, default_text_color, default_font_size, now, id],
     ).map_err(|e| e.to_string())?;
     Ok(())
@@ -135,4 +138,23 @@ pub fn search_notes(query: String, db: State<Arc<Database>>) -> Result<Vec<Note>
     .filter_map(|r| r.ok())
     .collect();
     Ok(notes)
+}
+
+#[tauri::command]
+pub fn open_note_window(app: AppHandle, note_id: String, db: State<Arc<Database>>) -> Result<(), String> {
+    crate::app_log!("open_note_window called, note_id={}", note_id);
+    let conn = db.conn.lock().map_err(|e| { crate::app_log!("DB lock failed: {}", e); e.to_string() })?;
+    let result = conn.query_row("SELECT id FROM notes WHERE id=?1 AND deleted_at IS NULL",
+        rusqlite::params![note_id], |_| Ok(()));
+    drop(conn);
+    match result {
+        Ok(()) => {
+            crate::app_log!("open_note_window: note found, creating window");
+            crate::window_manager::create_note_window(&app, &note_id).ok();
+        }
+        Err(e) => {
+            crate::app_log!("open_note_window: note not found: {}", e);
+        }
+    }
+    Ok(())
 }

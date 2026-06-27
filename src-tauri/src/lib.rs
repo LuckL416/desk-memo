@@ -1,6 +1,7 @@
 pub mod backup_engine;
 pub mod commands;
 pub mod db;
+pub mod logger;
 pub mod models;
 pub mod reminder_engine;
 pub mod timer_engine;
@@ -36,6 +37,8 @@ pub fn run() {
         .setup(|app| {
             let db = app.state::<Arc<Database>>();
             let data_dir = app.state::<PathBuf>();
+            crate::logger::init(&data_dir);
+            crate::app_log!("App starting, data_dir={}", data_dir.display());
             timer_engine::start_timer_engine(app.handle().clone(), db.inner().clone());
             reminder_engine::start_reminder_engine(app.handle().clone(), db.inner().clone());
             backup_engine::start_backup_engine(data_dir.inner().clone());
@@ -67,7 +70,7 @@ pub fn run() {
                     if ntype == "timer" { "#1f1d3d".into() } else { "#f4ecd6".into() }
                 });
                 let note_title = title.unwrap_or_default();
-                window_manager::create_note_window(&app.handle(), &id, &ntype, &bg_color, &note_title).ok();
+                window_manager::create_note_window(&app.handle(), &id).ok();
             }
 
             tray::setup_tray(&app.handle()).ok();
@@ -86,6 +89,7 @@ pub fn run() {
             commands::notes::restore_note,
             commands::notes::permanently_delete_note,
             commands::notes::search_notes,
+            commands::notes::open_note_window,
             commands::timers::get_timer_state,
             commands::timers::start_timer,
             commands::timers::pause_timer,
@@ -101,6 +105,9 @@ pub fn run() {
             commands::settings::set_setting,
             commands::settings::get_setting,
             commands::settings::export_all_data,
+            commands::settings::read_log,
+            commands::settings::pick_folder,
+            commands::settings::pick_save_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
