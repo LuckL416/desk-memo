@@ -62,3 +62,17 @@ export const PASTEL_COLORS = [
   { name: 'navy', hex: '#1f1d3d', label: '深蓝' },
   { name: 'white', hex: '#ffffff', label: '纯白' },
 ] as const
+
+export const MEMO_COLORS = [
+  { name: 'pink', hex: '#FCE4E4', tape: '#F5B5B5', text: '#5A2A2A', label: '粉色' },
+  { name: 'purple', hex: '#EBE3F7', tape: '#CBB0EE', text: '#3D2B5A', label: '紫色' },
+  { name: 'green', hex: '#E4F0E1', tape: '#B5D6AC', text: '#2F4A29', label: '绿色' },
+  { name: 'blue', hex: '#E1EEF7', tape: '#A9CEE8', text: '#24435A', label: '蓝色' },
+  { name: 'yellow', hex: '#FFF4CC', tape: '#FFE08A', text: '#5A4A15', label: '黄色' },
+] as const
+
+export type MemoColor = typeof MEMO_COLORS[number]
+
+export function randomMemoColor() {
+  return MEMO_COLORS[Math.floor(Math.random() * MEMO_COLORS.length)]
+}

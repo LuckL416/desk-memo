@@ -1,0 +1,80 @@
+/* ====== 纸质便签主题 ====== */
+
+.memo-window {
+  border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 顶部胶带 */
+.memo-window::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 64px;
+  height: 26px;
+  border-radius: 2px;
+  opacity: 0.75;
+  z-index: 10;
+  pointer-events: none;
+  filter: blur(0.3px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
+}
+
+/* 纸张纹理噪点 */
+.memo-window::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.025;
+  z-index: 1;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ====== 5 套马卡龙配色 ====== */
+
+.memo-pink {
+  background: #FCE4E4;
+  color: #5A2A2A;
+}
+.memo-pink::before { background: #F5B5B5; }
+
+.memo-purple {
+  background: #EBE3F7;
+  color: #3D2B5A;
+}
+.memo-purple::before { background: #CBB0EE; }
+
+.memo-green {
+  background: #E4F0E1;
+  color: #2F4A29;
+}
+.memo-green::before { background: #B5D6AC; }
+
+.memo-blue {
+  background: #E1EEF7;
+  color: #24435A;
+}
+.memo-blue::before { background: #A9CEE8; }
+
+.memo-yellow {
+  background: #FFF4CC;
+  color: #5A4A15;
+}
+.memo-yellow::before { background: #FFE08A; }
+
+/* 悬停上浮效果 */
+.memo-window:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
+}
+
+.memo-window.is-locked:hover {
+  transform: none;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
