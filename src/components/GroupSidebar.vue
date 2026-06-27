@@ -144,7 +144,7 @@ function deleteGroup() {
 </template>
 
 <style scoped>
-.sidebar { width: 160px; padding: 16px; border-right: 1px solid var(--color-hairline); font-size: 13px; }
+.sidebar { width: 160px; padding: 16px; border-right: 1px solid rgba(0,0,0,0.06); font-size: 13px; background: rgba(255,255,255,0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
 .sidebar-label { font-weight: 600; margin-bottom: 10px; font-size: 11px; color: #888; }
 .group-item { padding: 6px 10px; border-radius: var(--rounded-pill); margin-bottom: 4px; cursor: pointer; }
 .group-item:hover { background: var(--color-surface-soft); }

@@ -17,7 +17,7 @@ const emit = defineEmits<{ confirm: []; cancel: [] }>()
 
 <style scoped>
 .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 600; }
-.confirm-box { background: #fff; border-radius: 12px; padding: 24px; min-width: 300px; max-width: 400px; box-shadow: 0 4px 24px rgba(0,0,0,0.15); }
+.confirm-box { background: #fff; border-radius: 16px; padding: 24px; min-width: 300px; max-width: 400px; box-shadow: 0 4px 24px rgba(0,0,0,0.15); }
 .confirm-box p { font-size: 14px; line-height: 1.5; margin-bottom: 20px; color: var(--color-ink); }
 .confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .btn-cancel { background: #fff; border: 1px solid var(--color-hairline); padding: 7px 20px; border-radius: var(--rounded-pill); cursor: pointer; font-size: 13px; }

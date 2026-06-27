@@ -31,9 +31,9 @@ function onKeydown(e: KeyboardEvent) {
 
 <style scoped>
 .inline-input-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; z-index: 500; }
-.inline-input-box { background: #fff; border-radius: 12px; padding: 20px; min-width: 300px; box-shadow: 0 4px 24px rgba(0,0,0,0.15); }
+.inline-input-box { background: #fff; border-radius: 16px; padding: 20px; min-width: 300px; box-shadow: 0 4px 24px rgba(0,0,0,0.15); }
 .inline-input-box input { width: 100%; border: 1px solid #e6e6e6; border-radius: 8px; padding: 10px 14px; font-size: 15px; outline: none; margin-bottom: 12px; }
-.inline-input-box input:focus { border-color: #000; }
+.inline-input-box input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px rgba(0,0,0,0.08); }
 .inline-input-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .btn-cancel { background: #fff; border: 1px solid #e6e6e6; padding: 6px 18px; border-radius: 50px; cursor: pointer; font-size: 13px; }
 .btn-confirm { background: #000; color: #fff; border: none; padding: 6px 18px; border-radius: 50px; cursor: pointer; font-size: 13px; }
