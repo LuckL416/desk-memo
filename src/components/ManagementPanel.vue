@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import GroupSidebar from './GroupSidebar.vue'
@@ -74,6 +75,16 @@ async function openSearchResult(note: Note) {
 async function closePanel() {
   await getCurrentWindow().hide()
 }
+
+const currentTheme = ref<'macaron' | 'hacker'>(
+  document.documentElement.classList.contains('theme-hacker') ? 'hacker' : 'macaron'
+)
+
+async function setTheme(theme: 'macaron' | 'hacker') {
+  currentTheme.value = theme
+  document.documentElement.className = theme === 'hacker' ? 'theme-hacker' : 'theme-macaron'
+  await invoke('set_setting', { key: 'theme', value: theme })
+}
 </script>
 
 <template>
@@ -84,6 +95,10 @@ async function closePanel() {
         <span class="view-pill" :class="{ active: viewMode === 'list' }" @click="viewMode = 'list'">列表</span>
         <span class="view-pill" :class="{ active: viewMode === 'calendar' }" @click="viewMode = 'calendar'">日历</span>
         <span class="view-pill" :class="{ active: viewMode === 'wall' }" @click="viewMode = 'wall'">便签墙</span>
+      </div>
+      <div class="theme-toggle" data-tauri-drag-region="false">
+        <span class="view-pill" :class="{ active: currentTheme === 'macaron' }" @click="setTheme('macaron')">马卡龙</span>
+        <span class="view-pill" :class="{ active: currentTheme === 'hacker' }" @click="setTheme('hacker')">极客黑客</span>
       </div>
       <div class="search-wrap" data-tauri-drag-region="false">
         <input v-model="searchQuery" placeholder="🔍 搜索便签..." @input="onSearch" class="search-input" data-tauri-drag-region="false" />
@@ -124,6 +139,7 @@ async function closePanel() {
 .header:active { cursor: grabbing; }
 .panel-title { font-weight: 700; font-size: 17px; }
 .view-toggle { display: flex; gap: 4px; background: var(--color-surface-soft); padding: 3px; border-radius: var(--rounded-pill); -webkit-app-region: no-drag; }
+.theme-toggle { display: flex; gap: 4px; background: var(--color-surface); padding: 3px; border-radius: var(--rounded-pill); -webkit-app-region: no-drag; }
 .view-pill { padding: 5px 14px; border-radius: var(--rounded-pill); font-size: 13px; cursor: pointer; }
 .view-pill.active { background: var(--color-primary); color: var(--color-on-primary); }
 .search-wrap { flex: 1; display: flex; justify-content: center; -webkit-app-region: no-drag; }
