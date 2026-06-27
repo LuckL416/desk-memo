@@ -17,7 +17,6 @@ function getMemoClass(bgColor: string | null): string {
   return match ? `memo-${match.name}` : `memo-${randomMemoColor().name}`
 }
 const memoClass = computed(() => getMemoClass(note.value?.bg_color ?? null))
-const rotateDeg = (Math.random() * 4 - 2).toFixed(1)
 
 const noteId = getCurrentWindow().label.replace('note-', '')
 
@@ -87,7 +86,15 @@ async function handleUpdateOpacity(val: number) {
 }
 
 function handleContextMenu(event: MouseEvent) {
-  contextMenuPos.value = { x: event.clientX, y: event.clientY }
+  const menuWidth = 150
+  const menuHeight = 220
+  let x = event.clientX
+  let y = event.clientY
+  // 靠右时翻到左边
+  if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 8
+  // 靠下时翻到上面
+  if (y + menuHeight > window.innerHeight) y = window.innerHeight - menuHeight - 8
+  contextMenuPos.value = { x, y }
   showContextMenu.value = true
 }
 
@@ -104,7 +111,7 @@ function debouncedSave(data: Partial<Note>) {
     <p>{{ errorMsg }}</p>
     <p style="font-size:12px;margin-top:8px;">noteId: {{ noteId }}</p>
   </div>
-  <div v-else-if="note" class="note-window memo-window" :class="memoClass" :style="{ transform: `rotate(${rotateDeg}deg)` }" @contextmenu="handleContextMenu">
+  <div v-else-if="note" class="note-window memo-window" :class="memoClass" @contextmenu="handleContextMenu">
     <NoteChrome
       :title="note.title || ''" :mode="mode" :pinned="pinned" :opacity="opacity"
       @close="handleClose" @hide="handleHide" @toggle-mode="handleToggleMode"
@@ -116,23 +123,24 @@ function debouncedSave(data: Partial<Note>) {
       <TodoNoteEditor v-else-if="note.type === 'todo'" :note="note" @update="debouncedSave" />
       <TimerNoteView v-else-if="note.type === 'timer'" :note="note" />
     </div>
-    <Teleport to="body">
-      <div v-if="showContextMenu" class="context-overlay" @click="showContextMenu = false">
-        <div class="context-menu" :style="{ left: contextMenuPos.x + 'px', top: contextMenuPos.y + 'px' }">
-          <div class="ctx-item" @click="handleToggleMode(); showContextMenu = false">{{ mode === 'top' ? '切换到底层' : '切换到置顶' }}</div>
-          <div class="ctx-item" @click="handleTogglePinned(); showContextMenu = false">{{ pinned ? '解锁位置' : '锁定位置' }}</div>
-          <div class="ctx-sep"></div>
-          <div class="ctx-item" @click="showReminder = true; showContextMenu = false">设置提醒</div>
-          <div class="ctx-item" @click="showContextMenu = false">复制便签</div>
-          <div class="ctx-sep"></div>
-          <div class="ctx-item ctx-danger" @click="handleHide(); showContextMenu = false">隐藏窗口</div>
-        </div>
-      </div>
-    </Teleport>
-
     <ReminderDialog v-if="showReminder" :noteId="noteId" @close="showReminder = false" />
   </div>
   <div v-else class="note-status memo-window">便签数据为空</div>
+
+  <!-- 更多菜单 — 放在 v-if/v-else 链外面，避免 overflow/transform 裁剪 -->
+  <Teleport to="body">
+    <div v-if="showContextMenu" class="context-overlay" @click="showContextMenu = false">
+      <div class="context-menu" :style="{ left: contextMenuPos.x + 'px', top: contextMenuPos.y + 'px' }">
+        <div class="ctx-item" @click="handleToggleMode(); showContextMenu = false">{{ mode === 'top' ? '切换到底层' : '切换到置顶' }}</div>
+        <div class="ctx-item" @click="handleTogglePinned(); showContextMenu = false">{{ pinned ? '解锁位置' : '锁定位置' }}</div>
+        <div class="ctx-sep"></div>
+        <div class="ctx-item" @click="showReminder = true; showContextMenu = false">设置提醒</div>
+        <div class="ctx-item" @click="showContextMenu = false">复制便签</div>
+        <div class="ctx-sep"></div>
+        <div class="ctx-item ctx-danger" @click="handleHide(); showContextMenu = false">隐藏窗口</div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -140,8 +148,8 @@ function debouncedSave(data: Partial<Note>) {
 .note-body { flex: 1; overflow: auto; }
 .note-status { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; color: #999; font-size: 15px; padding: 20px; text-align: center; }
 .note-error { color: #e81123; }
-.context-overlay { position: fixed; inset: 0; z-index: 199; }
-.context-menu { position: fixed; background: #fff; border: 1px solid var(--color-hairline); border-radius: var(--rounded-md); padding: 4px; z-index: 200; min-width: 140px; font-size: 13px; box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+.context-overlay { position: fixed; inset: 0; z-index: 9999; }
+.context-menu { position: fixed; background: #fff; border: 1px solid #ccc; border-radius: 10px; padding: 4px; z-index: 10000; min-width: 140px; font-size: 13px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
 .ctx-item { padding: 7px 14px; border-radius: 4px; cursor: pointer; }
 .ctx-item:hover { background: var(--color-surface-soft); }
 .ctx-danger { color: var(--color-accent-magenta); }

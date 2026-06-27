@@ -64,6 +64,13 @@ async function openCalendar() {
   })
 }
 
+async function openSearchResult(note: Note) {
+  const label = `note-${note.id}`
+  const existing = await WebviewWindow.getByLabel(label)
+  if (existing) { await existing.show(); await existing.setFocus(); return }
+  new WebviewWindow(label, { url: 'index.html', title: '桌面便签', width: 320, height: 240, minWidth: 200, minHeight: 120, decorations: false, skipTaskbar: true, visible: true })
+}
+
 async function closePanel() {
   await getCurrentWindow().hide()
 }
@@ -89,7 +96,10 @@ async function closePanel() {
       <GroupSidebar @select="onSelectGroup" @select-trash="onSelectTrash" />
       <NoteList v-if="viewMode === 'list' && !isSearching" :group="selectedGroup" :trash="showTrash" :key="listRefreshKey" />
       <div v-else-if="isSearching" class="search-results">
-        <div v-for="n in searchResults" :key="n.id" class="search-item">{{ n.title || '无标题' }}</div>
+        <div v-for="n in searchResults" :key="n.id" class="search-item" @click="openSearchResult(n)">
+          <span>{{ n.title || '无标题' }}</span>
+          <span style="font-size:11px;color:#999;margin-left:8px;">{{ n.type === 'todo' ? '待办' : n.type === 'timer' ? '计时' : '文本' }}</span>
+        </div>
         <div v-if="searchResults.length === 0" style="color:#999;padding:20px;text-align:center;">无匹配结果</div>
       </div>
       <CalendarView v-else-if="viewMode === 'calendar'" />

@@ -1,0 +1,120 @@
+/* ====== 极客黑客主题 ====== */
+
+html.theme-hacker {
+  --color-bg: #0D1117;
+  --color-surface: #161B22;
+  --color-primary: #00FF41;
+  --color-on-primary: #0D1117;
+  --color-ink: #E6EDF3;
+  --color-hairline: rgba(0, 255, 65, 0.15);
+  --color-accent-magenta: #FF4444;
+  --color-success: #00FF41;
+  --color-hover: rgba(0, 255, 65, 0.08);
+  --color-shadow: rgba(0, 255, 65, 0.08);
+  --font-ui: 'JetBrains Mono', 'FangSong', '仿宋', monospace;
+}
+
+/* CRT 扫描线 */
+html.theme-hacker body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.04) 2px,
+    rgba(0, 0, 0, 0.04) 4px
+  );
+}
+
+/* 便签卡片暗色化 — 覆盖所有5种配色 */
+html.theme-hacker .memo-pink,
+html.theme-hacker .memo-purple,
+html.theme-hacker .memo-green,
+html.theme-hacker .memo-blue,
+html.theme-hacker .memo-yellow {
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+/* 胶带 → 顶部发光横线 */
+html.theme-hacker .memo-window::before {
+  background: linear-gradient(90deg, transparent, rgba(0,255,65,0.3), transparent) !important;
+  height: 1px !important;
+  width: calc(100% - 24px) !important;
+  top: -1px !important;
+  border-radius: 0 !important;
+  filter: none !important;
+  box-shadow: none !important;
+}
+
+/* 去纸张噪点 */
+html.theme-hacker .memo-window::after {
+  display: none;
+}
+
+/* 便签窗口暗色边框 */
+html.theme-hacker .memo-window {
+  background: var(--color-surface);
+  border: 1px solid var(--color-hairline);
+  box-shadow: 0 0 12px rgba(0, 255, 65, 0.05);
+}
+
+/* 管理面板 */
+html.theme-hacker .management-panel {
+  background: var(--color-bg);
+}
+
+/* 侧栏：暗色纯底 */
+html.theme-hacker .sidebar {
+  background: var(--color-bg) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-right-color: var(--color-hairline) !important;
+}
+
+/* 按钮 */
+html.theme-hacker .new-btn,
+html.theme-hacker .btn-confirm {
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+
+html.theme-hacker .chrome-btn:hover {
+  background: var(--color-hover);
+}
+
+/* 输入框 */
+html.theme-hacker input,
+html.theme-hacker textarea,
+html.theme-hacker select {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border-color: var(--color-hairline);
+}
+
+html.theme-hacker input:focus,
+html.theme-hacker textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(0, 255, 65, 0.15);
+}
+
+/* 弹窗 */
+html.theme-hacker .dialog,
+html.theme-hacker .confirm-box,
+html.theme-hacker .inline-input-box {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border: 1px solid var(--color-hairline);
+}
+
+/* 上下文菜单 */
+html.theme-hacker .context-menu {
+  background: var(--color-surface);
+  border-color: var(--color-hairline);
+  color: var(--color-ink);
+}

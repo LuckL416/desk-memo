@@ -1,9 +1,10 @@
-:root {
+:root,
+html.theme-macaron {
+  --color-bg: #ffffff;
+  --color-surface: #f7f7f5;
   --color-primary: #000000;
   --color-on-primary: #ffffff;
-  --color-canvas: #ffffff;
   --color-ink: #000000;
-  --color-surface-soft: #f7f7f5;
   --color-hairline: #e6e6e6;
   --color-block-lime: #dceeb1;
   --color-block-lilac: #c5b0f4;
@@ -14,7 +15,9 @@
   --color-block-navy: #1f1d3d;
   --color-accent-magenta: #ff3d8b;
   --color-success: #1ea64a;
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --color-hover: rgba(0,0,0,0.08);
+  --color-shadow: rgba(0,0,0,0.12);
+  --font-ui: 'Inter', 'FangSong', '仿宋', 'SimSun', '宋体', sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
   --rounded-xs: 2px;
   --rounded-sm: 6px;
@@ -37,9 +40,9 @@
 }
 
 body {
-  font-family: var(--font-sans);
+  font-family: var(--font-ui);
   color: var(--color-ink);
-  background: transparent;
+  background: var(--color-bg);
   overflow: hidden;
   user-select: none;
 }
