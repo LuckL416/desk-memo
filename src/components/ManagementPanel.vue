@@ -5,13 +5,14 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import GroupSidebar from './GroupSidebar.vue'
 import NoteList from './NoteList.vue'
 import CalendarView from './CalendarView.vue'
+import MemoWall from './MemoWall.vue'
 import InlineInput from './InlineInput.vue'
 import * as api from '../utils/tauri'
 import type { Group, Note } from '../types'
 
 const selectedGroup = ref<Group | null>(null)
 const showTrash = ref(false)
-const viewMode = ref<'list' | 'calendar'>('list')
+const viewMode = ref<'list' | 'calendar' | 'wall'>('list')
 const searchQuery = ref('')
 const searchResults = ref<Note[]>([])
 const isSearching = ref(false)
@@ -75,6 +76,7 @@ async function closePanel() {
       <div class="view-toggle" data-tauri-drag-region="false">
         <span class="view-pill" :class="{ active: viewMode === 'list' }" @click="viewMode = 'list'">列表</span>
         <span class="view-pill" :class="{ active: viewMode === 'calendar' }" @click="viewMode = 'calendar'">日历</span>
+        <span class="view-pill" :class="{ active: viewMode === 'wall' }" @click="viewMode = 'wall'">便签墙</span>
       </div>
       <div class="search-wrap" data-tauri-drag-region="false">
         <input v-model="searchQuery" placeholder="🔍 搜索便签..." @input="onSearch" class="search-input" data-tauri-drag-region="false" />
@@ -90,7 +92,8 @@ async function closePanel() {
         <div v-for="n in searchResults" :key="n.id" class="search-item">{{ n.title || '无标题' }}</div>
         <div v-if="searchResults.length === 0" style="color:#999;padding:20px;text-align:center;">无匹配结果</div>
       </div>
-      <CalendarView v-else />
+      <CalendarView v-else-if="viewMode === 'calendar'" />
+      <MemoWall v-else-if="viewMode === 'wall'" :group="selectedGroup" />
     </div>
     <InlineInput
       v-if="showNewNoteInput"
