@@ -43,3 +43,20 @@ body {
   overflow: hidden;
   user-select: none;
 }
+
+/* ====== Noteriv 增强：全局圆角 ====== */
+input, textarea, select {
+  border-radius: var(--rounded-md);
+}
+
+/* ====== Noteriv 增强：聚焦发光 ====== */
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
+}
+
+button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.12);
+}
